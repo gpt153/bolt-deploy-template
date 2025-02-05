@@ -1,16 +1,24 @@
-name: Test SSH Connection to GCP VM
+name: Debug SSH Authentication
 
 on:
   push:
     branches: [main]
 
 jobs:
-  test-ssh:
+  debug-ssh:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
+
+      - name: Debug SSH Key
+        run: |
+          echo "Checking SSH Key..."
+          echo "${{ secrets.GCP_VM_SSH_KEY }}" | wc -l
+          echo "Checking Username and IP..."
+          echo "Username: ${{ secrets.GCP_VM_USER }}"
+          echo "IP: ${{ secrets.GCP_VM_IP }}"
 
       - name: Test SSH Connection from GitHub Actions
         uses: appleboy/ssh-action@v0.1.3
