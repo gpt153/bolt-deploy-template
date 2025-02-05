@@ -14,8 +14,14 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
       
-      - name: Build Docker
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+      
+      - name: Configure Docker
+        run: gcloud auth configure-docker
+      
+      - name: Build and Push
         run: |
           docker build -t frontend:latest .
           docker tag frontend:latest gcr.io/${{ secrets.GCP_PROJECT_ID }}/frontend
-          
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/frontend
