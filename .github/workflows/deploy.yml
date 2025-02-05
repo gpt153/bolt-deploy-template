@@ -1,4 +1,5 @@
-name: Test SSH
+name: Test SSH Connection
+
 on:
   push:
     branches: [main]
@@ -7,13 +8,11 @@ jobs:
   test-ssh:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-      - name: SSH Test
-        uses: appleboy/ssh-action@v0.1.3
-        with:
-          host: ${{ secrets.GCP_VM_IP }}
-          username: ${{ secrets.GCP_VM_USER }}
-          key: ${{ secrets.GCP_VM_SSH_KEY }}
-          script: |
-            echo "SSH SUCCESS on $(whoami)@$(hostname)"
+      - name: Manual SSH Test
+        run: |
+          echo "${{ secrets.GCP_VM_SSH_KEY }}" > keyfile
+          chmod 600 keyfile
+          ssh -o StrictHostKeyChecking=no -i keyfile ${{ secrets.GCP_VM_USER }}@${{ secrets.GCP_VM_IP }} "echo 'SSH SUCCESS on ' \$(whoami)@\$(hostname)"
