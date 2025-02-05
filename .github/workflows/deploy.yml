@@ -1,4 +1,4 @@
-name: Debug SSH Authentication
+name: Debug SSH Key Presence
 
 on:
   push:
@@ -12,18 +12,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v2
 
-      - name: Debug SSH Key
+      - name: Debug SSH Key Presence
         run: |
-          echo "Checking SSH Key..."
-          echo "${{ secrets.GCP_VM_SSH_KEY }}" | wc -l
-          echo "Checking Username and IP..."
-          echo "Username: ${{ secrets.GCP_VM_USER }}"
-          echo "IP: ${{ secrets.GCP_VM_IP }}"
-
-      - name: Test SSH Connection from GitHub Actions
-        uses: appleboy/ssh-action@v0.1.3
-        with:
-          host: ${{ secrets.GCP_VM_IP }}
-          username: ${{ secrets.GCP_VM_USER }}
-          key: ${{ secrets.GCP_VM_SSH_KEY }}
-          script: "echo 'GitHub Actions SSH works!'"
+          if [ -z "${{ secrets.GCP_VM_SSH_KEY }}" ]; then
+            echo "ERROR: SSH key is empty or missing!"
+            exit 1
+          else
+            echo "SSH Key is present. Length: $(echo "${{ secrets.GCP_VM_SSH_KEY }}" | wc -c) characters."
+          fi
