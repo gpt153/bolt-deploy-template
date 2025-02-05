@@ -1,18 +1,44 @@
-name: Test SSH Connection
+name: Deploy to GCP VM
 
 on:
   push:
     branches: [main]
 
 jobs:
-  test-ssh:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v2
 
-      - name: Manual SSH Test
+      - name: Build Docker Image
         run: |
+          # 1) Build the Docker image locally on GitHub Actions
+          docker build -t frontend:latest .
+
+          # 2) Save the image as a tar file
+          docker save -o oden-frontend.tar frontend:latest
+
+      - name: Transfer Image to VM
+        run: |
+          # 3) Create a temp keyfile from our GitHub Secret
           echo "${{ secrets.GCP_VM_SSH_KEY }}" > keyfile
           chmod 600 keyfile
-          ssh -o StrictHostKeyChecking=no -i keyfile ${{ secrets.GCP_VM_USER }}@${{ secrets.GCP_VM_IP }} "echo 'SSH SUCCESS on ' \$(whoami)@\$(hostname)"
+
+          # 4) Secure copy the tar file to our VM
+          scp -o StrictHostKeyChecking=no -i keyfile oden-frontend.tar \
+            ${{ secrets.GCP_VM_USER }}@${{ secrets.GCP_VM_IP }}:/home/${{ secrets.GCP_VM_USER }}/
+
+      - name: Deploy Container on VM
+        run: |
+          # 5) SSH into the VM and load/run the container
+          echo "${{ secrets.GCP_VM_SSH_KEY }}" > keyfile
+          chmod 600 keyfile
+
+          ssh -o StrictHostKeyChecking=no -i keyfile ${{ secrets.GCP_VM_USER }}@${{ secrets.GCP_VM_IP }} << EOF
+            sudo docker stop oden-frontend || true
+            sudo docker rm oden-frontend || true
+            sudo docker load < /home/${{ secrets.GCP_VM_USER }}/oden-frontend.tar
+            sudo docker run -d -p 80:80 --name=oden-frontend frontend:latest
+          EOF
