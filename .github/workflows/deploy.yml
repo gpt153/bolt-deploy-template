@@ -25,3 +25,4 @@ jobs:
           docker build -t frontend:latest .
           docker tag frontend:latest gcr.io/${{ secrets.GCP_PROJECT_ID }}/frontend
           docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/frontend
+          #hello world
