@@ -42,6 +42,12 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
+      <header className="bg-white border-b">
+        <div className="max-w-4xl mx-auto py-4 px-4">
+          <h1 className="text-xl font-semibold text-gray-800">OdenChat</h1>
+        </div>
+      </header>
+
       <div className="flex-1 overflow-y-auto p-4 max-w-4xl mx-auto w-full">
         {messages.map((message, index) => (
           <Message key={index} {...message} />
