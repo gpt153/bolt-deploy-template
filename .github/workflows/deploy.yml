@@ -1,22 +1,39 @@
-name: Debug SSH Key Presence
+name: Deploy to GCP VM
 
 on:
   push:
     branches: [main]
 
 jobs:
-  debug-ssh:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
 
-      - name: Debug SSH Key Presence
+      - name: Build Docker Image
         run: |
-          if [ -z "${{ secrets.GCP_VM_SSH_KEY }}" ]; then
-            echo "ERROR: SSH key is empty or missing!"
-            exit 1
-          else
-            echo "SSH Key is present. Length: $(echo "${{ secrets.GCP_VM_SSH_KEY }}" | wc -c) characters."
-          fi
+          docker build -t frontend:latest .
+          docker save -o oden-frontend.tar frontend:latest
+
+      - name: Transfer Image to VM
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.GCP_VM_IP }}
+          username: ${{ secrets.GCP_VM_USER }}
+          key: ${{ secrets.GCP_VM_SSH_KEY }}
+          source: "oden-frontend.tar"
+          target: "/home/${{ secrets.GCP_VM_USER }}/"
+
+      - name: Deploy Container on VM
+        uses: appleboy/ssh-action@v0.1.3
+        with:
+          host: ${{ secrets.GCP_VM_IP }}
+          username: ${{ secrets.GCP_VM_USER }}
+          key: ${{ secrets.GCP_VM_SSH_KEY }}
+          script: |
+            sudo docker stop oden-frontend || true
+            sudo docker rm oden-frontend || true
+            sudo docker load < /home/${{ secrets.GCP_VM_USER }}/oden-frontend.tar
+            sudo docker run -d -p 80:80 --name=oden-frontend frontend:latest
